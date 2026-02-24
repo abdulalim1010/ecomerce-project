@@ -379,3 +379,21 @@ a:not(.no-underline):hover::after {
 .scale-150 {
   transform: scale(1.5);
 }
+
+/* Infinite scroll animation for navbar offers */
+@keyframes scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-scroll {
+  animation: scroll 20s linear infinite;
+}
+
+.animate-scroll:hover {
+  animation-play-state: paused;
+}

@@ -7,7 +7,7 @@ import TopRatedSection from "@/components/TopRatedSection";
 export default function Home() {
   return (
     <div>
-      <Navbar />
+      <Navbar isHomePage={true} />
       <Banner />
       
       <main>
