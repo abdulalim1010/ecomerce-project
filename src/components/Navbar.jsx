@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Navbar({ isHomePage = false }) {
   const [open, setOpen] = useState(false);
@@ -65,11 +66,11 @@ export default function Navbar({ isHomePage = false }) {
 
             {/* Right - Sign In / Join Us */}
             <div className="flex items-center gap-4">
-              <Link href="/signin" className="hover:text-violet-400 transition-colors">
+              <Link href="/login" className="hover:text-violet-400 transition-colors">
                 Sign In
               </Link>
               <Link 
-                href="/join" 
+                href="/register" 
                 className="hidden md:inline-flex items-center gap-1 px-3 py-1 bg-violet-600 hover:bg-violet-700 rounded-md transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -151,7 +152,7 @@ export default function Navbar({ isHomePage = false }) {
               <div className="flex items-center gap-2 md:gap-3">
                 {/* User Icon */}
                 <Link
-                  href="/signin"
+                  href="/login"
                   className="flex flex-col items-center p-2 hover:text-violet-600 transition-colors"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
