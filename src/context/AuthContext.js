@@ -52,6 +52,10 @@ export const AuthProvider = ({ children }) => {
 
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
+      
+      // Set token as cookie for middleware
+      document.cookie = `token=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+      
       setUser(data.user);
 
       return { success: true };
@@ -78,6 +82,10 @@ export const AuthProvider = ({ children }) => {
 
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
+      
+      // Set token as cookie for middleware
+      document.cookie = `token=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+      
       setUser(data.user);
 
       return { success: true };
@@ -89,6 +97,10 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    
+    // Clear token cookie
+    document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    
     setUser(null);
     router.push('/login');
   };

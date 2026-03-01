@@ -12,7 +12,11 @@ export default function TopRatedSection() {
   useEffect(() => {
     fetch("/api/toprated")
       .then(res => res.json())
-      .then(data => setProducts(data));
+      .then(data => {
+        console.log("Top Rated API Response:", data);
+        setProducts(data);
+      })
+      .catch(err => console.error("Error fetching top rated products:", err));
   }, []);
 
   return (

@@ -3,11 +3,15 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { FaUser, FaSignOutAlt, FaBars, FaTimes } from "react-icons/fa";
 
 export default function Navbar({ isHomePage = false }) {
   const [open, setOpen] = useState(false);
   const [activeLink, setActiveLink] = useState("/");
   const [searchQuery, setSearchQuery] = useState("");
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  const { user, logout } = useAuth();
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -17,7 +21,6 @@ export default function Navbar({ isHomePage = false }) {
     { href: "/contact", label: "Contact" },
   ];
 
-  // Dynamic offers - can be changed from admin or fetched from API
   const offers = [
     { text: "🎉 Free Shipping on Orders Over $50!", link: "/shipping" },
     { text: "🔥 Big Sale - Up to 50% OFF!", link: "/sale" },
@@ -34,10 +37,15 @@ export default function Navbar({ isHomePage = false }) {
     }
   };
 
+  const handleLogout = () => {
+    logout();
+    setUserMenuOpen(false);
+  };
+
   return (
     <div className="fixed inset-x-0 top-0 z-50">
       {/* Top Info Bar */}
-      <div className="bg-gray-900 text-white text-sm">
+      <div className="bg-slate-900 text-white text-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-10">
             {/* Left - Contact Info */}
@@ -64,29 +72,83 @@ export default function Navbar({ isHomePage = false }) {
               </p>
             </div>
 
-            {/* Right - Sign In / Join Us */}
+            {/* Right - Sign In / Join Us or User Profile */}
             <div className="flex items-center gap-4">
-              <Link href="/login" className="hover:text-violet-400 transition-colors">
-                Sign In
-              </Link>
-              <Link 
-                href="/register" 
-                className="hidden md:inline-flex items-center gap-1 px-3 py-1 bg-violet-600 hover:bg-violet-700 rounded-md transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                </svg>
-                Join Us
-              </Link>
+              {user ? (
+                // User Profile Dropdown
+                <div className="relative">
+                  <button
+                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    className="flex items-center gap-2 hover:text-violet-400 transition-colors"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center text-white font-medium">
+                      {user.avatar ? (
+                        <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full object-cover" />
+                      ) : (
+                        user.name?.charAt(0).toUpperCase() || 'U'
+                      )}
+                    </div>
+                    <span className="hidden md:inline font-medium">{user.name}</span>
+                  </button>
+                  
+                  {/* Dropdown Menu */}
+                  {userMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-50">
+                      <div className="px-4 py-2 border-b border-gray-100">
+                        <p className="text-sm font-medium text-gray-800">{user.name}</p>
+                        <p className="text-xs text-gray-500">{user.email}</p>
+                      </div>
+                      <Link
+                        href="/profile"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        <FaUser className="inline mr-2" />
+                        My Profile
+                      </Link>
+                      <button
+                        onClick={handleLogout}
+                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                      >
+                        <FaSignOutAlt className="inline mr-2" />
+                        Logout
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <Link href="/login" className="hover:text-violet-400 transition-colors">
+                    Sign In
+                  </Link>
+                  <Link 
+                    href="/register" 
+                    className="hidden md:inline-flex items-center gap-1 px-3 py-1 bg-violet-600 hover:bg-violet-700 rounded-md transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                    </svg>
+                    Join Us
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
       </div>
 
       {/* Main Navbar */}
-      <div className="bg-white shadow-md">
+      <div className="bg-white/95 backdrop-blur shadow-md border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row items-center justify-between py-3 md:h-20 gap-3 md:gap-0">
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setOpen(!open)}
+              className="md:hidden p-2 text-gray-700 hover:text-violet-600"
+            >
+              {open ? <FaTimes className="w-6 h-6" /> : <FaBars className="w-6 h-6" />}
+            </button>
+
             {/* Logo - Left */}
             <Link href="/" className="flex items-center gap-2 group shrink-0">
               <div className="relative">
@@ -103,7 +165,7 @@ export default function Navbar({ isHomePage = false }) {
             </Link>
 
             {/* Navigation Links - Center */}
-            <div className="hidden md:flex items-center gap-1">
+            <div className={`hidden md:flex items-center gap-1 ${open ? 'hidden' : ''}`}>
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
@@ -152,7 +214,7 @@ export default function Navbar({ isHomePage = false }) {
               <div className="flex items-center gap-2 md:gap-3">
                 {/* User Icon */}
                 <Link
-                  href="/login"
+                  href={user ? "/profile" : "/login"}
                   className="flex flex-col items-center p-2 hover:text-violet-600 transition-colors"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -227,10 +289,61 @@ export default function Navbar({ isHomePage = false }) {
                   {link.label}
                 </Link>
               ))}
+              
+              {/* Mobile Auth Buttons */}
+              {!user && (
+                <div className="flex gap-2 mt-4">
+                  <Link
+                    href="/login"
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gray-100 text-gray-700 font-medium"
+                    onClick={() => setOpen(false)}
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-violet-600 text-white font-medium"
+                    onClick={() => setOpen(false)}
+                  >
+                    Join Us
+                  </Link>
+                </div>
+              )}
+              
+              {/* Mobile User Profile */}
+              {user && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <div className="flex items-center gap-3 px-4 mb-3">
+                    <div className="w-10 h-10 rounded-full bg-violet-600 flex items-center justify-center text-white font-medium">
+                      {user.avatar ? (
+                        <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full object-cover" />
+                      ) : (
+                        user.name?.charAt(0).toUpperCase() || 'U'
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-800">{user.name}</p>
+                      <p className="text-sm text-gray-500">{user.email}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setOpen(false);
+                    }}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-50 text-red-600 font-medium"
+                  >
+                    <FaSignOutAlt />
+                    Logout
+                  </button>
+                </div>
+              )}
+              
               <div className="flex gap-2 mt-4">
                 <Link
                   href="/wishlist"
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gray-100 text-gray-700 font-medium"
+                  onClick={() => setOpen(false)}
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
@@ -240,6 +353,7 @@ export default function Navbar({ isHomePage = false }) {
                 <Link
                   href="/cart"
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-violet-600 text-white font-medium"
+                  onClick={() => setOpen(false)}
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { FcGoogle } from 'react-icons/fc';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import Swal from 'sweetalert2';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -13,7 +14,6 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
   const { register } = useAuth();
@@ -21,15 +21,24 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      Swal.fire({
+        icon: 'warning',
+        title: 'Password Mismatch',
+        text: 'Passwords do not match',
+        confirmButtonColor: '#7c3aed',
+      });
       return;
     }
 
     if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+      Swal.fire({
+        icon: 'warning',
+        title: 'Weak Password',
+        text: 'Password must be at least 6 characters',
+        confirmButtonColor: '#7c3aed',
+      });
       return;
     }
 
@@ -40,10 +49,115 @@ export default function RegisterPage() {
     setLoading(false);
 
     if (result.success) {
-      router.push('/');
+      Swal.fire({
+        icon: 'success',
+        title: 'Welcome!',
+        text: 'Account created successfully! Redirecting...',
+        timer: 1500,
+        showConfirmButton: false,
+        confirmButtonColor: '#7c3aed',
+      }).then(() => {
+        router.push('/');
+      });
     } else {
-      setError(result.error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Registration Failed',
+        text: result.error || 'Something went wrong',
+        confirmButtonColor: '#7c3aed',
+      });
     }
+  };
+
+  const handleGoogleSignIn = () => {
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    
+    if (!clientId || clientId === 'your-google-client-id' || clientId.includes('your-')) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Google Sign In Not Configured',
+        text: 'Please configure Google OAuth credentials in .env.local to enable Google Sign In',
+        confirmButtonColor: '#7c3aed',
+      });
+      return;
+    }
+
+    const redirectUri = `${window.location.origin}/api/auth/google/callback`;
+    
+    const googleAuthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+    googleAuthUrl.searchParams.set('client_id', clientId);
+    googleAuthUrl.searchParams.set('redirect_uri', redirectUri);
+    googleAuthUrl.searchParams.set('response_type', 'code');
+    googleAuthUrl.searchParams.set('scope', 'openid email profile');
+    googleAuthUrl.searchParams.set('access_type', 'offline');
+    googleAuthUrl.searchParams.set('prompt', 'consent');
+
+    // Open Google in a new window
+    const width = 500;
+    const height = 600;
+    const left = window.screenX + (window.outerWidth - width) / 2;
+    const top = window.screenY + (window.outerHeight - height) / 2;
+    
+    const googleWindow = window.open(
+      googleAuthUrl.toString(),
+      'Google Sign In',
+      `width=${width},height=${height},left=${left},top=${top}`
+    );
+
+    // Listen for message from popup
+    const handleMessage = async (event) => {
+      if (event.data.type === 'googleAuthSuccess') {
+        googleWindow.close();
+        
+        // Send code to backend
+        setLoading(true);
+        try {
+          const response = await fetch('/api/auth/google', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: event.data.code }),
+          });
+          
+          const data = await response.json();
+          
+          if (data.success) {
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('user', JSON.stringify(data.user));
+            
+            // Set token as cookie for middleware
+            document.cookie = `token=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+            
+            Swal.fire({
+              icon: 'success',
+              title: 'Welcome!',
+              text: 'Google sign in successful! Redirecting...',
+              timer: 1500,
+              showConfirmButton: false,
+              confirmButtonColor: '#7c3aed',
+            }).then(() => {
+              router.push('/');
+            });
+          } else {
+            Swal.fire({
+              icon: 'error',
+              title: 'Google Sign In Failed',
+              text: data.error || 'Something went wrong',
+              confirmButtonColor: '#7c3aed',
+            });
+          }
+        } catch (error) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Failed to complete Google sign in',
+            confirmButtonColor: '#7c3aed',
+          });
+        }
+        setLoading(false);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
   };
 
   return (
@@ -62,12 +176,6 @@ export default function RegisterPage() {
           <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
             Join Us
           </h2>
-
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-4 text-sm">
-              {error}
-            </div>
-          )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Name Input */}
@@ -169,13 +277,14 @@ export default function RegisterPage() {
           </div>
 
           {/* Google Sign In Button */}
-          <Link
-            href="/api/auth/signin"
-            className="w-full flex items-center justify-center gap-3 border-2 border-gray-300 rounded-lg py-3 hover:bg-gray-50 transition-colors"
+          <button
+            onClick={handleGoogleSignIn}
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-3 border-2 border-gray-300 rounded-lg py-3 hover:bg-gray-50 transition-colors disabled:opacity-50"
           >
             <FcGoogle className="text-2xl" />
             <span className="font-medium text-gray-700">Google</span>
-          </Link>
+          </button>
 
           {/* Login Link */}
           <p className="mt-6 text-center text-gray-600">

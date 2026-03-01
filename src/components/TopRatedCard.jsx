@@ -2,6 +2,27 @@
 
 export default function TopRatedCard({ product, onClick }) {
 
+  // Fallback placeholder image
+  const placeholderImage = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='320' viewBox='0 0 400 320'%3E%3Crect fill='%23e5e7eb' width='400' height='320'/%3E%3Ctext fill='%239ca3af' font-family='sans-serif' font-size='20' x='50%25' y='50%25' text-anchor='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
+
+  // Try multiple common fields so images show even if API shape changes
+  const primaryImage =
+    product?.images?.front ||
+    product?.image ||
+    product?.imageUrl ||
+    product?.thumbnail ||
+    "";
+
+  const secondaryImage =
+    product?.images?.back ||
+    product?.secondaryImage ||
+    product?.image ||
+    product?.imageUrl ||
+    "";
+
+  const frontImage = primaryImage || placeholderImage;
+  const backImage = secondaryImage || primaryImage || placeholderImage;
+
   return (
     <div
       onClick={onClick}
@@ -14,16 +35,17 @@ export default function TopRatedCard({ product, onClick }) {
         {/* Back Image - Reveals from inside */}
         <div className="absolute inset-0 overflow-hidden">
           <img
-            src={product.images.back}
+            src={backImage}
             alt="back"
             className="w-full h-full object-cover scale-100 group-hover:scale-105 transition-all duration-2000 ease-in-out"
+            onError={(e) => { e.target.src = placeholderImage; }}
           />
         </div>
 
         {/* Front Image - Slides/zooms to reveal back image */}
         <div className="absolute inset-0 overflow-hidden rounded-2xl">
           <img
-            src={product.images.front}
+            src={frontImage}
             alt="front"
             className="
               w-full h-full object-cover
@@ -31,6 +53,7 @@ export default function TopRatedCard({ product, onClick }) {
               group-hover:scale-110
               group-hover:opacity-0
             "
+            onError={(e) => { e.target.src = placeholderImage; }}
           />
         </div>
 
