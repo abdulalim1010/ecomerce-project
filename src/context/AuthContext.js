@@ -54,7 +54,8 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('user', JSON.stringify(data.user));
       
       // Set token as cookie for middleware
-      document.cookie = `token=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+      document.cookie = `token=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax; Secure`;
+      console.log('Login - Cookie set');
       
       setUser(data.user);
 
@@ -111,6 +112,7 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
+    isAdmin: user?.role === 'admin',
   };
 
   return (

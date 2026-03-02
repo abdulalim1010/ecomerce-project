@@ -1,70 +1,15 @@
 import clientPromise from "@/lib/mongodb";
+import { ObjectId } from "mongodb";
 
+// GET - Fetch all top rated products
 export async function GET() {
-
   const client = await clientPromise;
-
   const db = client.db("ecomerce-project");
 
-  const products = await db
-    .collection("toprated")
-    .find({})
-    .toArray();
-
-  return Response.json(products);
-
-}
-
-export async function DELETE() {
-  try {
-    const client = await clientPromise;
-    const db = client.db("ecomerce-project");
-    
-    await db.collection("toprated").deleteMany({});
-    
-    return Response.json({ success: true, message: "All data deleted" });
-  } catch (error) {
-    return Response.json({ success: false, error: error.message }, { status: 500 });
-  }
-}
-
-export async function PUT() {
-  try {
-    const client = await clientPromise;
-    const db = client.db("ecomerce-project");
-    
-    // Update all image paths from /products/ to /toprated/
-    const result = await db.collection("toprated").updateMany(
-      { "images.front": { $regex: "^/products/" } },
-      [
-        {
-          $set: {
-            "images.front": { $replaceOne: { input: "$images.front", find: "/products/", replacement: "/toprated/" } },
-            "images.back": { $replaceOne: { input: "$images.back", find: "/products/", replacement: "/toprated/" } }
-          }
-        }
-      ]
-    );
-    
-    return Response.json({ 
-      success: true, 
-      message: "Image paths updated successfully",
-      modifiedCount: result.modifiedCount
-    });
-  } catch (error) {
-    return Response.json({ 
-      success: false, 
-      error: error.message 
-    }, { status: 500 });
-  }
-}
-
-export async function POST() {
-  try {
-    const client = await clientPromise;
-    const db = client.db("ecomerce-project");
-    
-    const result = await db.collection("toprated").insertMany([
+  // Check if collection is empty, if so seed with default data
+  const count = await db.collection("toprated").countDocuments();
+  if (count === 0) {
+    await db.collection("toprated").insertMany([
       {
         name: "Bajaj Pulsar NS200",
         price: 320000,
@@ -120,17 +65,142 @@ export async function POST() {
         }
       }
     ]);
+  }
+
+  const products = await db
+    .collection("toprated")
+    .find({})
+    .toArray();
+
+  return Response.json(products);
+}
+
+// POST - Add new top rated product
+export async function POST(request) {
+  try {
+    const client = await clientPromise;
+    const db = client.db("ecomerce-project");
     
-    return Response.json({ 
-      success: true, 
-      message: "Data inserted successfully",
-      insertedCount: result.insertedCount,
-      insertedIds: result.insertedIds
+    const body = await request.json();
+    const { name, price, description, images } = body;
+    
+    if (!name || !price) {
+      return Response.json(
+        { success: false, error: "Name and price are required" },
+        { status: 400 }
+      );
+    }
+    
+    const newProduct = {
+      name,
+      price: Number(price),
+      description: description || "",
+      images: images || { front: "", back: "" },
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    const result = await db.collection("toprated").insertOne(newProduct);
+    
+    return Response.json({
+      success: true,
+      message: "Top Rated Product added successfully",
+      productId: result.insertedId
     });
   } catch (error) {
-    return Response.json({ 
-      success: false, 
-      error: error.message 
-    }, { status: 500 });
+    return Response.json(
+      { success: false, error: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT - Update top rated product
+export async function PUT(request) {
+  try {
+    const client = await clientPromise;
+    const db = client.db("ecomerce-project");
+    
+    const body = await request.json();
+    const { id, name, price, description, images } = body;
+    
+    if (!id) {
+      return Response.json(
+        { success: false, error: "Product ID is required" },
+        { status: 400 }
+      );
+    }
+    
+    const updateData = {
+      updatedAt: new Date()
+    };
+    
+    if (name) updateData.name = name;
+    if (price) updateData.price = Number(price);
+    if (description !== undefined) updateData.description = description;
+    if (images) updateData.images = images;
+    
+    const result = await db.collection("toprated").findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      { $set: updateData },
+      { returnDocument: "after" }
+    );
+    
+    if (!result) {
+      return Response.json(
+        { success: false, error: "Product not found" },
+        { status: 404 }
+      );
+    }
+    
+    return Response.json({
+      success: true,
+      message: "Top Rated Product updated successfully",
+      product: result
+    });
+  } catch (error) {
+    return Response.json(
+      { success: false, error: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE - Delete top rated product
+export async function DELETE(request) {
+  try {
+    const client = await clientPromise;
+    const db = client.db("ecomerce-project");
+    
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+    
+    if (!id) {
+      return Response.json(
+        { success: false, error: "Product ID is required" },
+        { status: 400 }
+      );
+    }
+    
+    const result = await db.collection("toprated").deleteOne({
+      _id: new ObjectId(id)
+    });
+    
+    if (result.deletedCount === 0) {
+      return Response.json(
+        { success: false, error: "Product not found" },
+        { status: 404 }
+      );
+    }
+    
+    return Response.json({
+      success: true,
+      message: "Top Rated Product deleted successfully"
+    });
+  } catch (error) {
+    return Response.json(
+      { success: false, error: error.message },
+      { status: 500 }
+    );
   }
 }

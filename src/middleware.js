@@ -12,6 +12,8 @@ export function middleware(request) {
     '/about',
     '/contact',
     '/product',
+    '/403',
+    '/admin',
     '/api/auth/login',
     '/api/auth/register',
     '/api/auth/google',
@@ -41,7 +43,10 @@ export function middleware(request) {
     pathname.includes('.ico') ||
     pathname.includes('.svg');
 
-  if (isPublicPath || isStaticFile) {
+  // Allow admin routes - role check is done in the page itself
+  const isAdminRoute = pathname.startsWith('/admin');
+
+  if (isPublicPath || isStaticFile || isAdminRoute) {
     return NextResponse.next();
   }
 
@@ -84,9 +89,11 @@ export function middleware(request) {
     );
   }
 
-  // Add user ID to headers for API routes
+  // Add user ID and role to headers for API routes
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-user-id', decoded.userId);
+  requestHeaders.set('x-user-role', decoded.role || 'user');
+  requestHeaders.set('x-user-email', decoded.email || '');
 
   const response = NextResponse.next({
     request: {
@@ -99,13 +106,6 @@ export function middleware(request) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
     '/((?!api|_next/).*)',
   ],
 };

@@ -53,7 +53,8 @@ export async function POST(request) {
     const result = await usersCollection.insertOne(newUser);
 
     // Generate JWT token
-    const token = generateToken(result.insertedId.toString());
+    const userWithId = { ...newUser, _id: result.insertedId };
+    const token = generateToken(userWithId);
 
     return NextResponse.json({
       success: true,

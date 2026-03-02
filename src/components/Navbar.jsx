@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { FaUser, FaSignOutAlt, FaBars, FaTimes } from "react-icons/fa";
 
@@ -10,8 +10,25 @@ export default function Navbar({ isHomePage = false }) {
   const [activeLink, setActiveLink] = useState("/");
   const [searchQuery, setSearchQuery] = useState("");
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
 
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
+
+  // Update cart count from localStorage
+  useEffect(() => {
+    const updateCartCount = () => {
+      const cartKey = user ? `cart_${user._id || user.email}` : 'cart_guest';
+      const cart = JSON.parse(localStorage.getItem(cartKey) || '[]');
+      const count = cart.reduce((total, item) => total + item.quantity, 0);
+      setCartCount(count);
+    };
+
+    updateCartCount();
+    
+    // Listen for cart changes
+    window.addEventListener('cartUpdated', updateCartCount);
+    return () => window.removeEventListener('cartUpdated', updateCartCount);
+  }, [user]);
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -20,6 +37,9 @@ export default function Navbar({ isHomePage = false }) {
     { href: "/about", label: "About" },
     { href: "/contact", label: "Contact" },
   ];
+
+  // Add admin link for admin users
+  const adminNavLink = { href: "/admin", label: "Admin Dashboard" };
 
   const offers = [
     { text: "🎉 Free Shipping on Orders Over $50!", link: "/shipping" },
@@ -97,7 +117,23 @@ export default function Navbar({ isHomePage = false }) {
                       <div className="px-4 py-2 border-b border-gray-100">
                         <p className="text-sm font-medium text-gray-800">{user.name}</p>
                         <p className="text-xs text-gray-500">{user.email}</p>
+                        {isAdmin && (
+                          <span className="inline-block mt-1 px-2 py-0.5 bg-violet-100 text-violet-700 text-xs font-medium rounded">Admin</span>
+                        )}
                       </div>
+                      {/* Admin Dashboard Link - Only for Admins */}
+                      {isAdmin && (
+                        <Link
+                          href="/admin"
+                          className="block px-4 py-2 text-sm text-violet-700 hover:bg-gray-100 font-medium"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          <svg className="inline mr-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                          </svg>
+                          Admin Dashboard
+                        </Link>
+                      )}
                       <Link
                         href="/profile"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -183,6 +219,28 @@ export default function Navbar({ isHomePage = false }) {
                   <span className="relative z-10">{link.label}</span>
                 </Link>
               ))}
+              {/* Admin Dashboard Link - Only for Admins */}
+              {isAdmin && (
+                <Link
+                  href={adminNavLink.href}
+                  onClick={() => setActiveLink(adminNavLink.href)}
+                  className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+                    activeLink === adminNavLink.href
+                      ? "text-white"
+                      : "text-violet-600 hover:text-violet-700"
+                  }`}
+                >
+                  {activeLink === adminNavLink.href && (
+                    <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 shadow-lg"></div>
+                  )}
+                  <span className="relative z-10 flex items-center gap-1">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                    </svg>
+                    {adminNavLink.label}
+                  </span>
+                </Link>
+              )}
             </div>
 
             {/* Search Bar & Icons - Right */}
@@ -241,7 +299,11 @@ export default function Navbar({ isHomePage = false }) {
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                     </svg>
-                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold">3</span>
+                    {cartCount > 0 && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold">
+                        {cartCount}
+                      </span>
+                    )}
                   </div>
                 </Link>
               </div>
